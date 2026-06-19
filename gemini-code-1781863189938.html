@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexForge Studio - Plinko X Engine Pro (Data Vault)</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0d1117;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        h1 { margin: 0 0 5px 0; color: #58a6ff; font-size: 24px; letter-spacing: 1px; }
+        .subtitle { color: #8b949e; margin-bottom: 20px; font-size: 14px; }
+        #main-layout {
+            display: flex; gap: 20px; background-color: #161b22;
+            padding: 20px; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+            border: 1px solid #30363d;
+        }
+        .control-panel {
+            width: 260px; display: flex; flex-direction: column; gap: 12px;
+            background-color: #0d1117; padding: 15px; border-radius: 8px; border: 1px solid #30363d;
+        }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        label { color: #8b949e; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        select, input {
+            background-color: #21262d; color: white; border: 1px solid #30363d;
+            padding: 9px; border-radius: 6px; font-size: 13px; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        select:focus, input:focus { border-color: #58a6ff; box-shadow: 0 0 0 3px rgba(88,166,255,0.15); }
+        
+        /* 升級：更具科技感的錢包金流看板 */
+        .balance-display {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid #38bdf8; border-radius: 6px; padding: 12px; text-align: center;
+            box-shadow: inset 0 0 10px rgba(56,189,248,0.1);
+        }
+        .balance-display label { color: #38bdf8; font-size: 10px; }
+        .balance-amount { font-size: 24px; font-weight: bold; color: #38bdf8; margin-top: 5px; font-family: monospace; text-shadow: 0 0 8px rgba(56,189,248,0.4); }
+        
+        .bet-input-container { display: flex; gap: 5px; }
+        .bet-input-container input { flex: 1; width: 60px; font-family: monospace; font-weight: bold; color: #ecf0f1; }
+        .quick-btn {
+            background-color: #21262d; border: 1px solid #30363d; color: #c9d1d9;
+            padding: 0 10px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover { background-color: #30363d; color: white; border-color: #8b949e; }
+
+        .fairness-panel {
+            background-color: #161b22; border: 1px solid #30363d; border-radius: 6px;
+            padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-top: 5px;
+        }
+        .fairness-title {
+            font-size: 11px; color: #58a6ff; font-weight: bold; border-bottom: 1px solid #30363d;
+            padding-bottom: 4px; margin-bottom: 2px; display: flex; justify-content: space-between;
+        }
+        .fair-value {
+            font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #a3a3a3;
+            background-color: #0d1117; padding: 6px; border-radius: 4px; word-break: break-all; border: 1px solid #21262d;
+        }
+
+        #game-container { position: relative; border-radius: 8px; overflow: hidden; background-color: #0d1117; border: 1px solid #30363d; }
+        canvas { display: block; }
+        
+        .stats-panel {
+            width: 180px; background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+            padding: 15px; display: flex; flex-direction: column; gap: 10px; height: 660px; box-sizing: border-box;
+        }
+        .stats-list { display: flex; flex-direction: column; gap: 8px; overflow-y: hidden; flex: 1; }
+        .stat-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; animation: slideIn 0.2s ease-out; }
+        .stat-item.win { background-color: rgba(46, 160, 67, 0.15); border: 1px solid rgba(46, 160, 67, 0.4); color: #56d364; }
+        .stat-item.loss { background-color: rgba(139, 148, 158, 0.1); border: 1px solid rgba(139, 148, 158, 0.2); color: #8b949e; }
+        .stat-item.jackpot { background: linear-gradient(135deg, rgba(236, 204, 104, 0.2) 0%, rgba(255, 165, 2, 0.2) 100%); border: 1px solid #ffa502; color: #eccc68; box-shadow: 0 0 10px rgba(255, 165, 2, 0.3); }
+
+        @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        button { padding: 12px; font-size: 15px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: transform 0.1s, opacity 0.2s; }
+        #drop-btn { background: linear-gradient(135deg, #238636 0%, #2ea043 100%); box-shadow: 0 4px 12px rgba(46, 160, 67, 0.3); }
+        #drop-btn:active { transform: scale(0.97); }
+        #auto-btn { background: linear-gradient(135deg, #1f6feb 0%, #094cb5 100%); box-shadow: 0 4px 12px rgba(31, 111, 235, 0.3); }
+        #auto-btn.active { background: linear-gradient(135deg, #da3633 0%, #f85149 100%); box-shadow: 0 4px 12px rgba(248, 81, 73, 0.3); }
+        button:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+    <h1>ApexForge Studio — PLINKO X</h1>
+    <div class="subtitle">永久存檔技術展示 (JSON Data Vault Cloud Connected)</div>
+
+    <div id="main-layout">
+        <div class="control-panel">
+            <div class="balance-display">
+                <label>永久安全錢包餘額 (Secure Vault)</label>
+                <div class="balance-amount" id="balance-val">LOADING...</div>
+            </div>
+
+            <div class="control-group">
+                <label>投注代幣 (Bet Amount)</label>
+                <div class="bet-input-container">
+                    <input type="number" id="bet-input" value="10" min="1" step="5">
+                    <button class="quick-btn" id="btn-half">1/2</button>
+                    <button class="quick-btn" id="btn-double">2x</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="risk-select">風險等級 (Risk)</label>
+                <select id="risk-select">
+                    <option value="low">低風險 (Low)</option>
+                    <option value="medium" selected>中風險 (Medium)</option>
+                    <option value="high">高風險 (High)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="rows-select">金字塔層數 (Rows)</label>
+                <select id="rows-select">
+                    <option value="8">8 層</option>
+                    <option value="9">9 層</option>
+                    <option value="10">10 層</option>
+                    <option value="11">11 層</option>
+                    <option value="12">12 層</option>
+                    <option value="13">13 層</option>
+                    <option value="14" selected>14 層</option>
+                    <option value="15">15 層</option>
+                    <option value="16">16 層</option>
+                </select>
+            </div>
+
+            <button id="drop-btn">單次投注</button>
+            <button id="auto-btn">自動投注: OFF</button>
+
+            <div class="fairness-panel">
+                <div class="fairness-title">
+                    <span>公平性驗證 (Provably Fair)</span>
+                    <span style="color:#00ffcc; font-size:10px;">● VAULT ACTIVE</span>
+                </div>
+                <div class="control-group">
+                    <label>Server Seed Hash (SHA-256)</label>
+                    <div class="fair-value" id="server-seed-hash">b18f77a8b60b2fde6d8f5b82cb19...</div>
+                </div>
+                <div class="control-group">
+                    <label>Client Seed (玩家自訂)</label>
+                    <input type="text" id="client-seed-input" value="apex_forge_studio_2026" style="padding: 5px; font-size: 11px;">
+                </div>
+                <div class="control-group" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <label>Next Nonce:</label>
+                    <span id="nonce-val" style="font-family:monospace; font-size:12px; color:#58a6ff; font-weight:bold;">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-container">
+            <canvas id="plinkoCanvas" width="760" height="660"></canvas>
+        </div>
+
+        <div class="stats-panel">
+            <label>即時獲利流水 (Live Stats)</label>
+            <div class="stats-list" id="stats-list"></div>
+        </div>
+    </div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('plinkoCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    const dropBtn = document.getElementById('drop-btn');
+    const autoBtn = document.getElementById('auto-btn');
+    const riskSelect = document.getElementById('risk-select');
+    const rowsSelect = document.getElementById('rows-select');
+    const balanceVal = document.getElementById('balance-val');
+    const betInput = document.getElementById('bet-input');
+    const btnHalf = document.getElementById('btn-half');
+    const btnDouble = document.getElementById('btn-double');
+    const statsList = document.getElementById('stats-list');
+    const clientSeedInput = document.getElementById('client-seed-input');
+    const nonceValTxt = document.getElementById('nonce-val');
+
+    const BACKEND_URL = "http://localhost:3000";
+
+    async function syncServerBalance() {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/user/balance`);
+            const data = await res.json();
+            balanceVal.innerText = '$' + data.balance.toFixed(2);
+        } catch(e) {
+            balanceVal.innerText = 'ERROR';
+            console.error("無法連線至後端伺服器。", e);
+        }
+    }
+    syncServerBalance();
+
+    btnHalf.addEventListener('click', () => {
+        let val = parseFloat(betInput.value);
+        if (val > 1) betInput.value = Math.max(1, Math.floor(val / 2));
+    });
+    btnDouble.addEventListener('click', () => {
+        let val = parseFloat(betInput.value);
+        betInput.value = Math.floor(val * 2);
+    });
+
+    let audioCtx = null;
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+    function playPegSound() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+        osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.type = 'sine';
+        osc.frequency.setValueAtTime(580 + (Math.random() - 0.5) * 40, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.04);
+    }
+
+    function playWinSound(isBigWin, isExtremeWin) {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        if (isExtremeWin) {
+            const chords = [261.6, 329.6, 392.0, 523.3, 659.3, 784.0, 1046.5];
+            chords.forEach((freq, idx) => {
+                const noteTime = now + idx * 0.07;
+                const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain();
+                osc1.type = 'triangle'; osc1.frequency.setValueAtTime(freq, noteTime);
+                gain1.gain.setValueAtTime(0.15, noteTime); gain1.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.4);
+                osc1.connect(gain1); gain1.connect(audioCtx.destination); osc1.start(noteTime); osc1.stop(noteTime + 0.4);
+            });
+            return;
+        }
+        const duration = isBigWin ? 0.35 : 0.15; const baseFreq = isBigWin ? 220 : 330;
+        [baseFreq, baseFreq * 1.25].forEach((freq) => {
+            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination); osc.type = isBigWin ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime(freq, now); osc.frequency.exponentialRampToValueAtTime(freq * 2, now + duration);
+            gainNode.gain.setValueAtTime(isBigWin ? 0.15 : 0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            osc.start(now); osc.stop(now + duration);
+        });
+    }
+
+    let confettiParticles = [];
+    const CONFETTI_COLORS = ['#ff4757', '#ffa502', '#2ed573', '#1e90ff', '#eccc68'];
+    function spawnConfetti(originX, originY) {
+        for (let i = 0; i < 90; i++) {
+            const angle = Math.PI * 1.1 + Math.random() * Math.PI * 0.8; const speed = 4 + Math.random() * 7;
+            confettiParticles.push({
+                x: originX, y: originY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                width: 4 + Math.random() * 5, height: 7 + Math.random() * 7,
+                color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+                rotation: Math.random() * Math.PI * 2, rotationSpeed: (Math.random() - 0.5) * 0.3,
+                opacity: 1.0, gravity: 0.18, friction: 0.98
+            });
+        }
+    }
+    function updateAndDrawConfetti() {
+        for (let i = confettiParticles.length - 1; i >= 0; i--) {
+            const p = confettiParticles[i]; p.vx *= p.friction; p.vy += p.gravity; p.x += p.vx; p.y += p.vy; p.rotation += p.rotationSpeed; p.opacity -= 0.012;
+            if (p.opacity <= 0) { confettiParticles.splice(i, 1); continue; }
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation); ctx.globalAlpha = p.opacity; ctx.fillStyle = p.color; ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height); ctx.restore();
+        }
+        ctx.globalAlpha = 1.0;
+    }
+
+    const MULTIPLIER_DATABASE = {
+        8: { low: [5.6, 1.6, 1.1, 1, 0.5, 1, 1.1, 1.6, 5.6], medium: [13, 3, 1.3, 0.7, 0.4, 0.7, 1.3, 3, 13], high: [29, 4, 1.5, 0.3, 0.2, 0.3, 1.5, 4, 29] },
+        9: { low: [5.6, 2, 1.6, 1, 0.7, 0.7, 1, 1.6, 2, 5.6], medium: [18, 4, 1.7, 0.9, 0.5, 0.5, 0.9, 1.7, 4, 18], high: [43, 7, 2, 0.6, 0.2, 0.2, 0.6, 2, 7, 43] },
+        10: { low: [8.9, 3, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 3, 8.9], medium: [22, 5, 2, 1.4, 0.6, 0.4, 0.6, 1.4, 2, 5, 22], high: [76, 10, 3, 0.9, 0.3, 0.2, 0.3, 0.9, 3, 10, 76] },
+        11: { low: [8.9, 3, 1.7, 1.2, 1, 0.7, 0.7, 1, 1.2, 1.7, 3, 8.9], medium: [24, 6, 3, 1.8, 0.7, 0.5, 0.5, 0.7, 1.8, 3, 6, 24], high: [120, 14, 4.3, 1.4, 0.4, 0.2, 0.2, 0.4, 1.4, 4.3, 14, 120] },
+        12: { low: [10, 4, 2, 1.4, 1.1, 1, 0.5, 1, 1.1, 1.4, 2, 4, 10], medium: [33, 11, 4, 2, 1.1, 0.6, 0.3, 0.6, 1.1, 2, 4, 11, 33], high: [170, 24, 8.1, 2, 0.7, 0.2, 0.2, 0.2, 0.7, 2, 8.1, 24, 170] },
+        13: { low: [10, 4, 2, 1.6, 1.2, 1, 0.7, 0.7, 1, 1.2, 1.6, 2, 4, 10], medium: [43, 13, 6, 3, 1.3, 0.7, 0.4, 0.4, 0.7, 1.3, 3, 6, 13, 43], high: [260, 37, 11, 4, 1, 0.2, 0.2, 0.2, 0.2, 1, 4, 11, 37, 260] },
+        14: { low: [11, 5, 3, 2, 1.4, 1, 0.5, 1, 0.5, 1, 1.4, 2, 3, 5, 11], medium: [58, 15, 7, 4, 1.9, 1, 0.5, 0.2, 0.5, 1, 1.9, 4, 7, 15, 58], high: [420, 56, 14, 5.3, 2, 0.2, 0.2, 0.2, 0.2, 0.2, 2, 5.3, 14, 56, 420] },
+        15: { low: [11, 5, 3, 2, 1.6, 1.2, 1, 0.7, 0.7, 1, 1.2, 1.6, 2, 3, 5, 11], medium: [88, 18, 9, 5, 2, 1.3, 0.6, 0.5, 0.5, 0.6, 1.3, 2, 5, 9, 18, 88], high: [620, 83, 27, 8, 3, 0.5, 0.2, 0.2, 0.2, 0.2, 0.5, 3, 8, 27, 83, 620] },
+        16: { low: [16, 9, 2, 1.4, 1.2, 1.1, 1, 0.5, 1, 0.5, 1, 1.1, 1.2, 1.4, 2, 9, 16], medium: [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110], high: [1000, 130, 26, 9, 4, 2, 0.2, 0.2, 0.2, 0.2, 0.2, 2, 4, 9, 26, 130, 1000] }
+    };
+
+    let ROWS = parseInt(rowsSelect.value);
+    let RISK = riskSelect.value;
+    let MULTIPLIERS = MULTIPLIER_DATABASE[ROWS][RISK];
+
+    let PADDING_TOP = 40; let ROW_HEIGHT = 34; let PEG_GAP = 32; let START_X = canvas.width / 2;
+    let BALL_RADIUS = 5.5; let PEG_RADIUS = 3;
+    let isAutoMode = false; let autoInterval = null;
+    let pegs = []; let bottomBoxes = []; let activeBalls = [];
+
+    function remapEngineConfig() {
+        ROWS = parseInt(rowsSelect.value); RISK = riskSelect.value; MULTIPLIERS = MULTIPLIER_DATABASE[ROWS][RISK];
+        ROW_HEIGHT = Math.min(38, 480 / (ROWS + 1)); PEG_GAP = ROW_HEIGHT * 0.9;
+        BALL_RADIUS = Math.max(4.5, 7 - (ROWS * 0.1)); PEG_RADIUS = Math.max(2.2, 4.5 - (ROWS * 0.1));
+        pegs = [];
+        for (let row = 1; row <= ROWS; row++) {
+            const layerRadius = row / 2;
+            for (let pegIdx = 0; pegIdx <= row; pegIdx++) {
+                pegs.push({ x: START_X + (pegIdx - layerRadius) * PEG_GAP, y: PADDING_TOP + row * ROW_HEIGHT, id: row + '-' + pegIdx, scale: 1 });
+            }
+        }
+        bottomBoxes = []; for (let i = 0; i <= ROWS; i++) bottomBoxes.push({ scaleY: 1, flash: 0 });
+        activeBalls = []; confettiParticles = [];
+    }
+    rowsSelect.addEventListener('change', remapEngineConfig);
+    riskSelect.addEventListener('change', remapEngineConfig);
+    remapEngineConfig();
+
+    function calculateVisualPointsFromPath(path, currentRows, currentHeight, currentGap) {
+        const points = [];
+        let currentX = START_X; let currentY = PADDING_TOP;
+        points.push({ x: currentX, y: currentY, targetPegId: null });
+
+        let currentPegIndex = 0;
+        for (let row = 1; row <= currentRows; row++) {
+            const choice = path[row - 1];
+            currentY += currentHeight;
+            if (choice === 1) currentPegIndex += 1;
+            
+            const layerRadius = row / 2;
+            const jitterX = (Math.random() - 0.5) * 3;
+            const targetX = START_X + (currentPegIndex - layerRadius) * currentGap + jitterX;
+            points.push({ x: targetX, y: currentY, targetPegId: row + '-' + currentPegIndex });
+        }
+        points.push({ x: points[points.length - 1].x, y: currentY + currentHeight * 0.8, targetPegId: null, isBottom: true });
+        return points;
+    }
+
+    async function triggerDrop() {
+        initAudio();
+        const betAmount = parseFloat(betInput.value);
+        const currentClientSeed = clientSeedInput.value.trim() || "apex_forge";
+
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/plinko/bet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ betAmount: betAmount, rows: ROWS, risk: RISK, clientSeed: currentClientSeed })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(errorData.error || "投注失敗");
+                if (isAutoMode) autoBtn.click();
+                return;
+            }
+
+            const resData = await response.json();
+            nonceValTxt.innerText = resData.nonce + 1;
+
+            const points = calculateVisualPointsFromPath(resData.path, ROWS, ROW_HEIGHT, PEG_GAP);
+            const isExtreme = (resData.finalIndex === 0 || resData.finalIndex === ROWS);
+
+            let ballColor = '#38bdf8'; // 微調球體顏色，契合科技感面板
+            if (isExtreme) ballColor = '#ffff00';
+            else if (resData.multiplier > 1) ballColor = '#bf94ff';
+
+            activeBalls.push({
+                points: points, currentPointIdx: 0, x: points[0].x, y: points[0].y, progress: 0, speed: 0.085,
+                color: ballColor, finalIndex: resData.finalIndex, snapshotRows: ROWS,
+                isExtreme: isExtreme, multiplier: resData.multiplier, payout: resData.payout, serverBalance: resData.newBalance
+            });
+
+        } catch (err) {
+            console.error("API 連線異常:", err);
+            alert("通訊失敗，請檢查後端是否啟動。");
+            if (isAutoMode) autoBtn.click();
+        }
+    }
+
+    function pushToLiveStats(multiplier, payout) {
+        const item = document.createElement('div');
+        if (multiplier === MULTIPLIERS[0] || multiplier === MULTIPLIERS[MULTIPLIERS.length - 1]) {
+            item.className = 'stat-item jackpot';
+        } else if (multiplier >= 1) {
+            item.className = 'stat-item win';
+        } else {
+            item.className = 'stat-item loss';
+        }
+        item.innerHTML = `<span>${multiplier.toFixed(1)}x</span><span>$${payout.toFixed(2)}</span>`;
+        statsList.insertBefore(item, statsList.firstChild);
+        if (statsList.children.length > 14) statsList.removeChild(statsList.lastChild);
+    }
+
+    dropBtn.addEventListener('click', () => { if (!isAutoMode) triggerDrop(); });
+
+    autoBtn.addEventListener('click', () => {
+        initAudio(); isAutoMode = !isAutoMode;
+        if (isAutoMode) {
+            autoBtn.classList.add('active'); autoBtn.innerText = "停止自動 (Stop)";
+            autoInterval = setInterval(triggerDrop, 220);
+        } else {
+            autoBtn.classList.remove('active'); autoBtn.innerText = "自動投注: OFF";
+            clearInterval(autoInterval);
+        }
+    });
+
+    function easeInQuad(t) { return t * t; }
+
+    function updateAndRender() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const bottomY = PADDING_TOP + (ROWS + 1) * ROW_HEIGHT - 5;
+        const boxWidth = PEG_GAP - 3; const boxHeight = Math.min(28, ROW_HEIGHT * 0.8);
+        
+        for (let i = 0; i <= ROWS; i++) {
+            const layerRadius = ROWS / 2; const baseMinX = START_X + (i - layerRadius) * PEG_GAP - boxWidth / 2;
+            let hue = RISK === 'low' ? 215 + (Math.abs(i - ROWS/2)/(ROWS/2))*40 : (RISK === 'medium' ? 240 + (Math.abs(i - ROWS/2)/(ROWS/2))*60 : 270 + (Math.abs(i - ROWS/2)/(ROWS/2))*90);
+            const boxState = bottomBoxes[i]; if (!boxState) continue;
+            if (boxState.scaleY < 1) boxState.scaleY += 0.06; if (boxState.flash > 0) boxState.flash -= 0.06;
+            ctx.save(); ctx.translate(baseMinX + boxWidth / 2, bottomY + boxHeight); ctx.scale(1, boxState.scaleY);
+            ctx.fillStyle = 'hsla(' + hue + ', 85%, ' + (42 + boxState.flash * 28) + '%, ' + (0.85 + boxState.flash * 0.15) + ')'; ctx.fillRect(-boxWidth / 2, -boxHeight, boxWidth, boxHeight);
+            ctx.strokeStyle = 'hsla(' + hue + ', 100%, ' + (65 + boxState.flash * 35) + '%, ' + (0.4 + boxState.flash * 0.6) + ')'; ctx.strokeRect(-boxWidth / 2, -boxHeight, boxWidth, boxHeight);
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold ' + (ROWS >= 14 ? '9px' : '11px') + ' Arial'; ctx.textAlign = 'center';
+            ctx.fillText(MULTIPLIERS[i] + 'x', 0, -boxHeight + (boxHeight/2 + 4)); ctx.restore(); 
+        }
+
+        pegs.forEach(peg => {
+            if (peg.scale > 1) peg.scale -= 0.08;
+            ctx.beginPath(); ctx.arc(peg.x, peg.y, PEG_RADIUS * peg.scale, 0, Math.PI * 2);
+            ctx.fillStyle = peg.scale > 1 ? '#fff' : '#444c56'; ctx.fill();
+        });
+
+        for (let i = activeBalls.length - 1; i >= 0; i--) {
+            const ball = activeBalls[i]; const pStart = ball.points[ball.currentPointIdx]; const pNext = ball.points[ball.currentPointIdx + 1];
+            if (pNext) {
+                ball.progress += ball.speed; if (ball.progress > 1) ball.progress = 1;
+                const t = easeInQuad(ball.progress); const midX = (pStart.x + pNext.x) / 2; const arcHeight = pNext.isBottom ? 2 : ROW_HEIGHT * 0.32; const midY = (pStart.y + pNext.y) / 2 - arcHeight;
+                ball.x = (1 - t) * (1 - t) * pStart.x + 2 * (1 - t) * t * midX + t * t * pNext.x; ball.y = (1 - t) * (1 - t) * pStart.y + 2 * (1 - t) * t * midY + t * t * pNext.y;
+                
+                if (ball.progress >= 1) {
+                    ball.currentPointIdx++; ball.progress = 0;
+                    if (pNext.targetPegId) { const hitPeg = pegs.find(p => p.id === pNext.targetPegId); if (hitPeg) { hitPeg.scale = 1.7; playPegSound(); } }
+                    
+                    if (pNext.isBottom && ball.snapshotRows === ROWS) {
+                        const box = bottomBoxes[ball.finalIndex]; if (box) { box.scaleY = 0.35; box.flash = 1.3; }
+                        balanceVal.innerText = '$' + ball.serverBalance.toFixed(2);
+                        pushToLiveStats(ball.multiplier, ball.payout);
+                        if (ball.isExtreme) { spawnConfetti(ball.x, ball.y - 10); playWinSound(true, true); }
+                        else if (ball.multiplier >= 2) { playWinSound(ball.multiplier >= 14, false); }
+                    }
+                }
+            } else { activeBalls.splice(i, 1); continue; }
+            ctx.save(); ctx.beginPath(); ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2); ctx.fillStyle = ball.color; ctx.shadowBlur = ball.isExtreme ? 20 : 8; ctx.shadowColor = ball.color; ctx.fill(); ctx.restore();
+        }
+        updateAndDrawConfetti();
+        requestAnimationFrame(updateAndRender);
+    }
+    requestAnimationFrame(updateAndRender);
+})();
+</script>
+</body>
+</html>
