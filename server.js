@@ -15,7 +15,8 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 // 2. 連接雲端資料庫 (MongoDB Atlas)
-const MONGO_URI = 'mongodb+srv://herry11089_db_user:WgZL2povA5SDl1P4@cluster0.ako9vdv.mongodb.net/?appName=Cluster0';
+// 安全版：優先讀取雲端保險箱(環境變數)，本地找不到才用明碼
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://herry11089_db_user:WgZL2povA5SDl1P4@cluster0.ako9vdv.mongodb.net/?appName=Cluster0';
 
 mongoose.connect(MONGO_URI)
     .then(() => {
